@@ -1,33 +1,52 @@
 #include "shell.h"
 
-/**
- * @file main.c
- * @brief Main entry point for the simple shell program.
- *
- * This file contains the main function for a basic shell
- * implementation. It includes necessary headers and implements
- * the main loop to continuously read user commands, display prompts,
- * and execute the entered commands.
- */
-
-int main(int argc, char *argv[], char *envp[])
+void ft_free_data(sh_data *data)
 {
-    (void)argc;
-    (void)argv;
-    while (1)
-    {
-                char command[128];
-        print_prompt();
-        read_user_command(command, sizeof(command));
-        if (strcmp(command, "exit") == 0)
+        unsigned int i;
+
+        for (i = 0; data->env_var[i]; i++)
         {
-            exit_shell();
+                free(data->env_var[i]);
         }
-        if (strcmp(command, "env") == 0)
+
+        free(data->env_var);
+        free(data->pid);
+}
+
+void ft_set_data(sh_data *data, char **av)
+{
+        unsigned int i;
+
+        data->arg_v = av;
+        data->input = NULL;
+        data->args = NULL;
+        data->status = 0;
+        data->i = 1;
+
+        for (i = 0; environ[i]; i++)
+                ;
+
+        data->env_var = malloc(sizeof(char *) * (i + 1));
+
+        for (i = 0; environ[i]; i++)
         {
-            print_environment(envp);
-            continue;
+                data->env_var[i] = ft_strdup(environ[i]);
         }
-        exec_commands(command, envp);
-    }
+
+        data->env_var[i] = NULL;
+        data->pid = ft_itoa(getpid());
+}
+
+int main(int ac, char **av)
+{
+        sh_data data;
+        (void) ac;
+
+        signal(SIGINT, ft_sigint_handler);
+        ft_set_data(&data, av);
+        loop_shell(&data);
+        ft_free_data(&data);
+        if (data.status < 0)
+                return (255);
+        return (data.status);
 }
